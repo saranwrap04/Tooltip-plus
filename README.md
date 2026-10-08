@@ -1,3 +1,5 @@
+<img width="390" height="332" alt="tooltip_plus_logo" src="https://github.com/user-attachments/assets/26aea1cb-98ef-40a7-89a9-18551717389c" />
+
 # Tooltip Plus
 
 **Everything about an item, right in its tooltip.** For World of Warcraft 3.3.5a (Wrath of the Lich King).
