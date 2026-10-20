@@ -1,4 +1,4 @@
-TOOLTIP PLUS v1.7.4
+TOOLTIP PLUS v1.8.0
 Everything about an item, right in its tooltip. For World of Warcraft 3.3.5a.
 By Saranwrap
 
@@ -11,7 +11,12 @@ how many your characters have, without leaving the game:
     crafted item, and which of your characters know a recipe or can learn it.
   - Your characters: how many of the item each of your characters has, and where (bags,
     bank, equipped, mailbox, currencies), plus your guild banks.
-  - Sell price, stack size and item ID.
+  - Sell price, stack size, item ID and item level.
+  - Tooltip look: position (game default, at the mouse, or a spot you choose), flat look,
+    scale, font, colours, borders in class / reaction / item quality colour.
+  - Units: class colours, guild rank, level, target, talents of players, NPC ID, and
+    health and mana bars in the tooltip.
+  - Links: spell, quest and achievement IDs, and the icon beside links clicked in chat.
   - One window (minimap button) with every recipe of every profession, and everything your
     characters own, both searchable.
 
@@ -72,7 +77,11 @@ THE WINDOW  (minimap button, or /tplus recipes)
   - Names are in this character's skill colour (red: skill too low, dark grey: not one of
     its professions). A tick marks the recipes it knows.
   - Right side: skill colours, how many it makes, the reagents with how many you have, where
-    the recipe is learned and which of your characters know it or can learn it.
+    the recipe is learned (trainer, recipe item, quest or discovery) and which of your
+    characters know it or can learn it.
+  - Under the reagents: every raw material, with crafted reagents broken down (bars to ore,
+    bolts to cloth, inks to pigments), as icons with how many you need and have.
+  - Click a reagent or a material icon: the recipes that use it (or make it).
   - Hover a recipe or a reagent for its full tooltip. Shift-click links it in chat.
   - Shift + right-click a material (bags, bank, chat link or the window): the window opens
     with every recipe that uses it, the ones you know first. A crafted item opens its recipe.
@@ -94,6 +103,8 @@ YOUR CHARACTERS
 
 SETTINGS  (/tplus, minimap right-click, or Escape > Interface > AddOns > Tooltip Plus)
   - Show item sources, only while holding Shift, compact (hide zones), "... and N more"
+    With "only while holding Shift", the tooltip says "Hold Shift" and fills in as soon as
+    you press it.
   - Item ID, stack size, sell price
   - Count of all your characters, one line per character
   - Used in, recipes known / can learn, reagents, Shift + right-click to open recipes
@@ -101,9 +112,27 @@ SETTINGS  (/tplus, minimap right-click, or Escape > Interface > AddOns > Tooltip
   - Which sources to show
   The Escape > Interface > AddOns page also has every command as a button.
 
+  Settings > Tooltip look  (/tplus look)
+  - Position: "In the world" (units and objects you point at) and "Frames and bars" (unit
+    frames, action bars, anything using the game's default spot), each at the game default,
+    at the mouse, or at a fixed spot. "At the mouse": side and X / Y offset.
+    "Move the fixed spot" shows a box to drag; right-click it when done. The tooltip grows
+    away from the nearest screen corner.
+  - Look: flat look, scale, font, font size, background (with opacity) and border colours.
+  - Units: player names in class colour, <AFK> / <DND>, guild with rank, coloured level,
+    race and class (Elite / Rare / Boss), hide the faction and PvP lines, target of the
+    unit, talents of players, NPC ID, border in class / reaction colour.
+    Talents: the main tree and the points, e.g. Holy (51/20/0), read when you hover a
+    player within inspect range (about 28 yards) and remembered for 5 minutes.
+  - Bars: health bar, mana / rage / energy bar, numbers on the bars. Health of mobs outside
+    your group is only known as a percentage on 3.3.5.
+  - Items and links: border in item quality colour, item level of gear, spell / quest /
+    achievement IDs, icon beside links clicked in chat.
+
 
 COMMANDS
   /tplus                 settings (/tooltipplus works too)
+  /tplus look            tooltip look settings
   /tplus recipes         recipes
   /tplus items           items of your characters
   /tplus gold            gold of your characters, in chat

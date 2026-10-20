@@ -88,7 +88,8 @@ function Main:Create()
     local settings = UI.FlatButton(bar, "Settings", 90, 20)
     settings:SetPoint("RIGHT", close, "LEFT", -6, 0)
     settings:SetScript("OnClick", function()
-        Main:Show(Main.current == "settings" and (Main.last or "recipes") or "settings")
+        local inSettings = Main.current == "settings" or Main.current == "style"
+        Main:Show(inSettings and (Main.last or "recipes") or (Main.lastSettings or "settings"))
     end)
     self.settingsBtn = settings
     -- page tabs: Recipes | Items
@@ -102,7 +103,7 @@ function Main:Create()
         prev = b
     end
 
-    for _, key in ipairs({ "recipes", "items", "settings" }) do
+    for _, key in ipairs({ "recipes", "items", "settings", "style" }) do
         local p = CreateFrame("Frame", nil, f)
         p:SetPoint("TOPLEFT", 0, -31)
         p:SetPoint("BOTTOMRIGHT", 0, 0)
@@ -115,7 +116,21 @@ function Main:Create()
         { "recipes",  TP.Recipes and function(p) TP.Recipes:Build(p) end },
         { "items",    TP.Items and function(p) TP.Items:Build(p) end },
         { "settings", TP.BuildSettings and function(p) TP:BuildSettings(p) end },
+        { "style",    TP.BuildStyleSettings and function(p) TP:BuildStyleSettings(p) end },
     }
+    -- the two settings pages: "Item info" and "Tooltip look" tabs at the top
+    self.subtabs = {}
+    for _, key in ipairs({ "settings", "style" }) do
+        local prev
+        for _, t in ipairs({ { "settings", "Item info" }, { "style", "Tooltip look" } }) do
+            local b = UI.FlatButton(self.pages[key], t[2], 110, 20)
+            if prev then b:SetPoint("LEFT", prev, "RIGHT", 6, 0) else b:SetPoint("TOPLEFT", 14, -10) end
+            b:SetScript("OnClick", function() Main:Show(t[1]) end)
+            b.key = t[1]
+            self.subtabs[#self.subtabs + 1] = b
+            prev = b
+        end
+    end
     for _, b in ipairs(builds) do
         local ok, err = false, "file not loaded"
         if b[2] then ok, err = pcall(b[2], self.pages[b[1]]) end
@@ -136,10 +151,12 @@ function Main:Show(key)
         if k == key then p:Show() else p:Hide() end
     end
     self.current = key
-    if key ~= "settings" then self.last = key end
+    local inSettings = key == "settings" or key == "style"
+    if inSettings then self.lastSettings = key else self.last = key end
+    for _, b in ipairs(self.subtabs) do b:SetBackdropColor(unpack(b.key == key and C.sel or C.button)) end
     for k, b in pairs(self.tabs) do b:SetBackdropColor(unpack(k == key and C.sel or C.button)) end
-    self.settingsBtn:SetText(key == "settings" and "Back" or "Settings")
-    self.settingsBtn:SetBackdropColor(unpack(key == "settings" and C.sel or C.button))
+    self.settingsBtn:SetText(inSettings and "Back" or "Settings")
+    self.settingsBtn:SetBackdropColor(unpack(inSettings and C.sel or C.button))
     self.frame:Show()
 end
 

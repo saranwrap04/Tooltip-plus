@@ -329,17 +329,125 @@ local function DetailLine(d, i)
             if self.link and IsModifiedClick("CHATLINK") then
                 local _, link = GetItemInfo(self.link)
                 if link then ChatEdit_InsertLink(link) end
+                return
             end
+            -- a reagent: the recipes that use it
+            if self.reagent and button == "LeftButton" then TP:QuickSearch(self.link) end
         end)
         d.lines[i] = l
     end
     return l
 end
 
+---------------------------------------------------------------------------
+-- Materials: every reagent broken down to what you gather or buy
+---------------------------------------------------------------------------
+local makers         -- item -> crafts that make it
+local function Makers(id)
+    if not makers then
+        makers = {}
+        for spell in pairs(DATA.crafts or {}) do
+            local c = TP:GetCraft(spell)
+            if c.item > 0 then
+                local t = makers[c.item]
+                if not t then t = {}; makers[c.item] = t end
+                t[#t + 1] = c
+            end
+        end
+    end
+    return makers[id]
+end
+
+local function Sold(id)     -- a vendor sells it: buying it is the way, not making it
+    local raw = DATA.items and DATA.items[id]
+    return raw and (raw:sub(1, 1) == "V" or raw:find(",V", 1, true)) and true or false
+end
+
+local function MinYield(c) return tonumber((c.yield or "1"):match("^(%d+)")) or 1 end
+
+-- the craft used to make an item in the breakdown: same profession first, no transmutes, lowest skill
+local function MakerFor(id, skill, path)
+    local list = Makers(id)
+    if not list then return end
+    local sold, best = Sold(id)        -- a sold item is only broken down by its own profession (inks)
+    for _, m in ipairs(list) do
+        local ok = not (m.name or ""):find("^Transmute") and #m.reagents > 0 and not (sold and m.skill ~= skill)
+        for _, r in ipairs(m.reagents) do if path[r[1]] then ok = false end end   -- no loops
+        if ok then
+            local score = (m.skill == skill and 0 or 10000) + m.req
+            if not best or score < best[1] then best = { score, m } end
+        end
+    end
+    return best and best[2]
+end
+
+-- craft -> { {item, count}, ... } of raw materials, and whether anything was broken down
+local function RawMaterials(c)
+    local total, order, expanded = {}, {}, false
+    local function add(id, n)
+        if not total[id] then total[id] = 0; order[#order + 1] = id end
+        total[id] = total[id] + n
+    end
+    local function walk(id, n, path, depth)
+        local m = depth < 6 and MakerFor(id, c.skill, path)
+        if not m then add(id, n) return end
+        expanded = true
+        path[id] = true
+        local times = math.ceil(n / MinYield(m))
+        for _, r in ipairs(m.reagents) do walk(r[1], r[2] * times, path, depth + 1) end
+        path[id] = nil
+    end
+    for _, r in ipairs(c.reagents) do walk(r[1], r[2], { [c.item] = true }, 0) end
+    local list = {}
+    for _, id in ipairs(order) do list[#list + 1] = { id, total[id] } end
+    return list, expanded
+end
+
+R.RawMaterials = RawMaterials
+
+local ICON_S, ICON_GAP = 30, 6
+local function MatIcon(d, i)
+    local b = d.mats[i]
+    if b then return b end
+    b = CreateFrame("Button", nil, d)
+    b:SetWidth(ICON_S); b:SetHeight(ICON_S)
+    Backdrop(b, C.panel)
+    b.tex = b:CreateTexture(nil, "ARTWORK")
+    b.tex:SetPoint("TOPLEFT", 1, -1); b.tex:SetPoint("BOTTOMRIGHT", -1, 1)
+    b.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    b.count = b:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    b.count:SetPoint("BOTTOMRIGHT", -1, 2)
+    local hl = b:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints(); hl:SetTexture(1, 1, 1, 0.15)
+    b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    b:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetHyperlink("item:" .. self.id)
+        local have = CountHave(self.id)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddDoubleLine(GREY .. "Needed|r", WHITE .. self.n .. "|r")
+        GameTooltip:AddDoubleLine(GREY .. "You have|r", (have >= self.n and "|cff40bf40" or (have > 0 and "|cffffd100" or GREY)) .. have .. "|r")
+        GameTooltip:AddLine(GREY .. "Click: recipes that use it.  Shift-click: link.|r", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    b:SetScript("OnClick", function(self)
+        if IsModifiedClick("CHATLINK") then
+            local _, link = GetItemInfo(self.id)
+            if link then ChatEdit_InsertLink(link) end
+            return
+        end
+        TP:QuickSearch("item:" .. self.id)
+    end)
+    d.mats[i] = b
+    return b
+end
+
 function R:ShowDetails(c)
     local d = self.detail
     self.selected = c
     for _, l in ipairs(d.lines) do l:Hide() end
+    for _, b in ipairs(d.mats) do b:Hide() end
     if not c then
         d.title:SetText(GREY .. "Select a recipe on the left.|r")
         d.icon:Hide(); d.sub:SetText(""); d.bands:SetText("")
@@ -373,6 +481,7 @@ function R:ShowDetails(c)
         l.left:SetText(left or "")
         l.right:SetText(right or "")
         l.link = link
+        l.reagent = nil
         l:Show()
         y = y - 17
     end
@@ -381,14 +490,36 @@ function R:ShowDetails(c)
         add(ACCENT() .. text .. "|r")
     end
 
-    -- reagents
+    -- reagents (click one: the recipes that use it)
     head("Reagents")
     for _, r in ipairs(c.reagents) do
         local have = CountHave(r[1])
         local hc = have >= r[2] and "|cff40bf40" or (have > 0 and "|cffffd100" or GREY)
         add(WHITE .. r[2] .. "|r " .. TP:ItemName(r[1]), hc .. "have " .. have .. "|r",
             GetItemIcon and GetItemIcon(r[1]), "item:" .. r[1], 8)
+        d.lines[n].reagent = r[1]
     end
+
+    -- materials: icons of everything needed, crafted reagents broken down to what you gather or buy
+    local raw, expanded = RawMaterials(c)
+    head(expanded and "All materials (crafted reagents broken down)" or "Materials")
+    y = y - 2
+    local width = d:GetWidth()
+    if type(width) ~= "number" or width < 50 then width = 430 end
+    local perRow = math.max(1, math.floor((width - 8) / (ICON_S + ICON_GAP)))
+    for i, m in ipairs(raw) do
+        local b = MatIcon(d, i)
+        local col, row = (i - 1) % perRow, math.floor((i - 1) / perRow)
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", d, "TOPLEFT", 8 + col * (ICON_S + ICON_GAP), y - row * (ICON_S + ICON_GAP))
+        b.id, b.n = m[1], m[2]
+        b.tex:SetTexture(GetItemIcon and GetItemIcon(m[1]) or "Interface\\Icons\\INV_Misc_QuestionMark")
+        b.count:SetText(m[2] > 1 and m[2] or "")
+        local have = CountHave(m[1])
+        b:SetBackdropBorderColor(unpack(have >= m[2] and { 0.25, 0.75, 0.25, 1 } or C.border))
+        b:Show()
+    end
+    if #raw > 0 then y = y - (math.floor((#raw - 1) / perRow) + 1) * (ICON_S + ICON_GAP) + ICON_GAP - 4 end
 
     -- where it is learned
     head("Learned from")
@@ -408,7 +539,10 @@ function R:ShowDetails(c)
             end
         end
     end
-    if not c.auto and not c.trainer and not items then add(GREY .. "Unknown|r", nil, nil, nil, 8) end
+    if c.learn then
+        for text in c.learn:gmatch("[^\n]+") do add(WHITE .. text .. "|r", nil, nil, nil, 8) end
+    end
+    if not c.auto and not c.trainer and not items and not c.learn then add(GREY .. "Unknown|r", nil, nil, nil, 8) end
 
     -- your characters
     local known, can, later = CharGroups(c)
@@ -552,11 +686,16 @@ function R:Build(f)
         self.rows[i] = row
     end
 
-    -- details
-    local d = CreateFrame("Frame", nil, f)
-    d:SetPoint("TOPLEFT", lp, "TOPRIGHT", 14, -6)
-    d:SetPoint("BOTTOMRIGHT", -14, 28)
+    -- details: a panel like the list
+    local dp = CreateFrame("Frame", nil, f)
+    dp:SetPoint("TOPLEFT", lp, "TOPRIGHT", 8, 0)
+    dp:SetPoint("BOTTOMRIGHT", -10, 28)
+    Backdrop(dp, C.panel)
+    local d = CreateFrame("Frame", nil, dp)
+    d:SetPoint("TOPLEFT", 8, -6)
+    d:SetPoint("BOTTOMRIGHT", -8, 6)
     d.lines = {}
+    d.mats = {}
     d.icon = CreateFrame("Button", nil, d)
     d.icon:SetWidth(38); d.icon:SetHeight(38)
     d.icon:SetPoint("TOPLEFT", 0, 0)
@@ -589,7 +728,7 @@ function R:Build(f)
     local help = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     help:SetPoint("BOTTOMRIGHT", -14, 9)
     help:SetText("Names in your skill colour (red: skill too low, dark grey: not your profession), tick = you know it.  " ..
-        "Shift-click: link.  Shift + right-click a reagent: its recipes.")
+        "Click a reagent or a material: its recipes.  Shift-click: link.")
 
     f:SetScript("OnShow", function()
         for _, dd in ipairs(R.dropdowns) do dd:Refresh() end

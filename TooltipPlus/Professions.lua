@@ -43,7 +43,9 @@ function TP:GetCraft(spell)
     req, yel, gry = tonumber(req) or 0, tonumber(yel) or 0, tonumber(gry) or 0
     c = { spell = spell, skill = S(skill), req = req, yellow = yel, grey = gry,
           green = floor((yel + gry) / 2), item = tonumber(item) or 0, yield = yield, reagents = {},
-          name = S(name), trainer = (src or ""):find("T") ~= nil, auto = (src or ""):find("A") ~= nil }
+          name = S(name), trainer = (src or ""):find("T") ~= nil, auto = (src or ""):find("A") ~= nil,
+          discovery = (src or ""):find("D") ~= nil, quest = (src or ""):find("Q") ~= nil,
+          learn = DATA.learn and DATA.learn[spell] }
     for id, n in (reag or ""):gmatch("(%d+)%*(%d+)") do
         c.reagents[#c.reagents + 1] = { tonumber(id), tonumber(n) }
     end

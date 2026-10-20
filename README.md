@@ -6,14 +6,17 @@
 
 **Everything about an item, right in its tooltip.** For World of Warcraft 3.3.5a (Wrath of the Lich King).
 
-Version 1.7.4 · by Saranwrap
+Version 1.8.0 · by Saranwrap
 
 Hover any item and Tooltip Plus tells you where it comes from, what it is used for and how many your characters have, without leaving the game.
 
 - **Where to get it**: vendors, quest rewards, crafting, mob drops with the drop chance, chests and gathering nodes, containers, disenchanting, prospecting, milling, skinning, pickpocketing and fishing.
 - **Professions**: which professions use a material, the reagents and skill colours of a crafted item, and which of your characters know a recipe or can learn it.
 - **Your characters**: how many of the item each of your characters has, and where (bags, bank, equipped, mailbox, currencies), plus your guild banks.
-- **Sell price, stack size and item ID.**
+- **Sell price, stack size, item ID and item level.**
+- **Tooltip look**: position (game default, at the mouse, or a spot you choose), flat look, scale, font, colours, borders in class / reaction / item quality colour.
+- **Units**: class colours, guild rank, level, target, talents of players, NPC ID, and health and mana bars in the tooltip.
+- **Links**: spell, quest and achievement IDs, and the icon beside links clicked in chat.
 - **One window** (minimap button) with every recipe of every profession, and everything your characters own, both searchable.
 
 ---
@@ -71,7 +74,9 @@ Every recipe of every profession.
 
 - Filter by profession, search a recipe or reagent name (or shift-click an item into the search box), and show all recipes, the ones this character knows, can learn now, or later, the ones another character knows, or the ones none of your characters know.
 - Recipe names are in this character's skill colour (red: skill too low, dark grey: not one of its professions). A tick marks the recipes it knows.
-- The right side shows the skill colours, how many it makes, the reagents with how many you have, where the recipe is learned (trainer, with the profession, or the recipe item and where to get it) and which of your characters know it or can learn it.
+- The right side shows the skill colours, how many it makes, the reagents with how many you have, where the recipe is learned (trainer, with the profession, the recipe item and where to get it, a quest, or a discovery) and which of your characters know it or can learn it.
+- Under the reagents, **all the raw materials** as icons: crafted reagents are broken down (bars to ore, bolts to cloth, inks to pigments), with how many you need and how many you have.
+- Click a reagent or a material icon to see the recipes that use it (or make it).
 - Hover a recipe or a reagent for its full tooltip. Shift-click links it in chat.
 
 **Shift + right-click a material** in your bags, your bank, a chat link or the window: the window opens with every recipe that uses it, the ones you know first. A crafted item opens its recipe.
@@ -101,7 +106,7 @@ Log on each character once so it is remembered. Some things are read when you op
 
 Open them with `/tplus`, a right-click on the minimap button, or **Escape → Interface → AddOns → Tooltip Plus**.
 
-- Show item sources, only while holding Shift, compact (hide zones), "… and N more" lines
+- Show item sources, only while holding Shift, compact (hide zones), "… and N more" lines. With **only while holding Shift**, the tooltip shows a "Hold Shift" line and fills in as soon as you press Shift.
 - Item ID, stack size, sell price
 - Count of all your characters, one line per character
 - Used in, recipes known / can learn, reagents of crafted items, Shift + right-click to open recipes
@@ -110,6 +115,20 @@ Open them with `/tplus`, a right-click on the minimap button, or **Escape → In
 
 The **Escape → Interface → AddOns** page also has every command as a button: open the window, look up an item, and forget a character.
 
+### Tooltip look
+
+The second tab of the settings (`/tplus look`).
+
+| Group | Options |
+| --- | --- |
+| **Position** | **In the world** (units and objects you point at) and **Frames and bars** (unit frames, action bars, anything that uses the game's default spot): game default, at the mouse, or a fixed spot. At the mouse: which side, X / Y offset. **Move the fixed spot** shows a box to drag (right-click it when done); the tooltip grows away from the nearest screen corner. |
+| **Look** | Flat look, scale, font, font size, background colour (with opacity), border colour |
+| **Units** | Player names in class colour, &lt;AFK&gt; / &lt;DND&gt;, guild with rank, coloured level, race and class (Elite / Rare / Boss), hide the faction and PvP lines, target of the unit, talents of players, NPC ID, border in class / reaction colour |
+| **Bars** | Health bar, mana / rage / energy bar, numbers on the bars |
+| **Items and links** | Border in item quality colour, item level of gear, spell / quest / achievement IDs, icon beside links clicked in chat |
+
+Talents show the main tree and the points, e.g. **Holy (51/20/0)**. They are read when you hover a player within inspect range (about 28 yards) and remembered for 5 minutes. The health of mobs outside your group is only known as a percentage on 3.3.5.
+
 ---
 
 ## Commands
@@ -117,6 +136,7 @@ The **Escape → Interface → AddOns** page also has every command as a button:
 | Command | |
 | --- | --- |
 | `/tplus` | Settings (`/tooltipplus` works too) |
+| `/tplus look` | Tooltip look settings |
 | `/tplus recipes` | Recipes |
 | `/tplus items` | Items of your characters |
 | `/tplus gold` | Gold of your characters, in chat |

@@ -25,6 +25,7 @@ local function Check(parent, name, label, x, y, get, set, tip)
     checks[#checks + 1] = cb
     return cb
 end
+TP.OptCheck = Check
 
 function TP:RefreshOptions()
     for _, cb in ipairs(checks) do cb:SetChecked(cb.get()) end
@@ -47,7 +48,7 @@ function TP:BuildSettings(p)
         line:SetTexture(C.accent[1], C.accent[2], C.accent[3], 0.35)
     end
 
-    local X1, X2, X3, Y = 14, 284, 554, -16
+    local X1, X2, X3, Y = 14, 284, 554, -46
     local STEP = 26
 
     -- column 1: tooltip

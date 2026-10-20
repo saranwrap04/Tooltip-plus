@@ -16,7 +16,7 @@ local ADDON_NAME = ...
 TooltipPlus = TooltipPlus or {}
 local TP = TooltipPlus
 TP.NAME = "Tooltip Plus"
-TP.VERSION = "1.7.4"
+TP.VERSION = "1.8.0"
 TP.AUTHOR = "Saranwrap"
 TP.FOLDER = ADDON_NAME or "TooltipPlus"
 TP.MEDIA = "Interface\\AddOns\\" .. TP.FOLDER .. "\\Media\\"
@@ -305,7 +305,8 @@ local function AddToTooltip(tt)
     if not id then return end
     done[tt] = true
     local lines = (not TP.db.shiftOnly or IsShiftKeyDown()) and TP:GetLines(id)
-    local hint = TP.db.shiftOnly and not IsShiftKeyDown() and DATA.items[id]
+    local hint = TP.db.shiftOnly and not IsShiftKeyDown() and
+        (DATA.items[id] or (TP.GetProfessionLines and TP:GetProfessionLines(id)))
     local showAll = not TP.db.shiftOnly or IsShiftKeyDown()
     local prof = showAll and TP.GetProfessionLines and TP:GetProfessionLines(id)
     if prof then
@@ -327,7 +328,7 @@ local function AddToTooltip(tt)
             if l[2] then tt:AddDoubleLine(l[1], l[2]) else tt:AddLine(l[1]) end
         end
     elseif hint then
-        tt:AddLine(GREY .. "Hold Shift for item sources|r")
+        tt:AddLine(GREY .. "Hold Shift: where it comes from (sources, places, drop chances) and professions|r")
     end
     if sell then
         tt:AddDoubleLine(GREY .. "Sells for|r", TP:FormatPrice(sell .. "c"))
@@ -348,6 +349,28 @@ local function AddToTooltip(tt)
     tt:AddLine(" ")
     tt:Show()
 end
+
+-- "Only while holding Shift": pressing or letting go of Shift redraws the tooltip under the mouse
+local shiftWatch = CreateFrame("Frame")
+shiftWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
+shiftWatch:SetScript("OnEvent", function(_, _, key)
+    if not (TP.db and TP.db.enabled and TP.db.shiftOnly) then return end
+    if key ~= "LSHIFT" and key ~= "RSHIFT" then return end
+    local tt = GameTooltip
+    if not tt:IsShown() or not tt:GetItem() then return end
+    local owner = tt:GetOwner()
+    local onEnter = owner and owner.GetScript and owner:GetScript("OnEnter")
+    if onEnter and owner:IsMouseOver() then
+        onEnter(owner)
+    else
+        local _, link = tt:GetItem()
+        if link then
+            local point = tt.GetAnchorType and tt:GetAnchorType()
+            tt:SetOwner(owner or UIParent, point or "ANCHOR_CURSOR")
+            tt:SetHyperlink(link)
+        end
+    end
+end)
 
 local function Hook(tt)
     if not tt or tt.tooltipPlusHooked then return end
@@ -382,6 +405,7 @@ ev:SetScript("OnEvent", function(self, event, name)
     TooltipPlusDB = TooltipPlusDB or {}
     CopyDefaults(DEFAULTS, TooltipPlusDB)
     TP.db = TooltipPlusDB
+    if TP.InitStyle then TP:InitStyle() end
     for _, tt in ipairs({ GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3,
                           ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3 }) do
         Hook(tt)
@@ -409,6 +433,8 @@ SlashCmdList["TOOLTIPPLUS"] = function(msg)
         TP:PrintGold()
     elseif msg == "settings" or msg == "options" then
         TP:ShowOptions()
+    elseif msg == "look" then
+        TP.Main:Show("style")
     elseif msg == "minimap" then
         TP.db.minimap = not TP.db.minimap
         TP:UpdateMinimap()
@@ -421,7 +447,7 @@ SlashCmdList["TOOLTIPPLUS"] = function(msg)
     elseif msg == "help" then
         TP:Print("/tplus - settings   /tplus on|off - turn the item sources on / off   /tplus <itemID> - print an item's sources")
         TP:Print("/tplus recipes - recipes   /tplus items - items of your characters   /tplus gold - gold of your characters")
-        TP:Print("/tplus settings - settings   /tplus minimap - show / hide the minimap button")
+        TP:Print("/tplus settings - settings   /tplus look - tooltip look   /tplus minimap - show / hide the minimap button")
         TP:Print("/tplus chars - characters remembered   /tplus forget <name> - forget a deleted character")
     else
         TP:ToggleOptions()
