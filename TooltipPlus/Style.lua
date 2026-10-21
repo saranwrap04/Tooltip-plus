@@ -42,6 +42,11 @@ Style.DEFAULTS = {
     itemLevel = true,
     linkIDs = true,          -- spell / quest / achievement IDs
     linkIcon = true,         -- icon beside a link clicked in chat
+    targetedBy = true,       -- how many of your group target the unit, and who
+    statRatings = true,      -- ratings as % at your level
+    statDerived = true,      -- primary stats as what they give your class
+    statSummary = true,      -- stat summary under gear
+    statCompare = true,      -- with the change against the item you wear
 }
 
 Style.FONTS = {
@@ -178,7 +183,7 @@ local function Mover()
     if UI then UI.Backdrop(f, { UI.C.accent[1] * 0.35, UI.C.accent[2] * 0.35, UI.C.accent[3] * 0.35, 0.85 }, UI.C.accent) end
     local fs = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     fs:SetPoint("CENTER")
-    fs:SetText("Tooltip Plus: tooltip spot\nDrag it.  Right-click: done")
+    fs:SetText("Tooltip Plus: anchor point\nDrag it.  Right-click: done")
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
@@ -188,11 +193,19 @@ local function Mover()
         db().fixedX, db().fixedY = floor(x + 0.5), floor(y + 0.5)
         self:ClearAllPoints()
         self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", db().fixedX, db().fixedY)
+        if TP.RefreshOptions then TP:RefreshOptions() end
     end)
     f:SetScript("OnMouseUp", function(self, button) if button == "RightButton" then self:Hide() end end)
     f:Hide()
     mover = f
     return f
+end
+
+function Style:ResetMover()
+    db().fixedX, db().fixedY = nil, nil
+    local f = Mover()
+    f:ClearAllPoints()
+    f:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -CONTAINER_OFFSET_X - 13, CONTAINER_OFFSET_Y)
 end
 
 function Style:ToggleMover()
@@ -361,6 +374,37 @@ local function UpdateBars()
     end
 end
 
+-- who in your party / raid targets the unit (the game only tells it for your group)
+local MAX_NAMES = 6
+function Style.TargetedBy(unit)
+    local list = {}
+    local raid = GetNumRaidMembers()
+    local function check(u)
+        if UnitExists(u) and UnitIsUnit(u .. "target", unit) then
+            local _, file = UnitClass(u)
+            local c = ClassColor(file) or { 1, 1, 1 }
+            list[#list + 1] = Hex(c[1], c[2], c[3]) .. (UnitIsUnit(u, "player") and "You" or (UnitName(u) or "?")) .. "|r"
+        end
+    end
+    if raid > 0 then
+        for i = 1, raid do check("raid" .. i) end
+    else
+        check("player")
+        for i = 1, GetNumPartyMembers() do check("party" .. i) end
+    end
+    return list
+end
+
+function Style.TargetedByText(unit)
+    local list = Style.TargetedBy(unit)
+    local head = C("label") .. "Targeted by|r " .. C("value") .. #list .. "|r"
+    if #list == 0 then return head end
+    local shown = {}
+    for i = 1, math.min(#list, MAX_NAMES) do shown[i] = list[i] end
+    local more = #list > MAX_NAMES and (" |cff9d9d9d+" .. (#list - MAX_NAMES) .. "|r") or ""
+    return head .. ": " .. table.concat(shown, ", ") .. more
+end
+
 local function TargetText(unit)
     local t = unit .. "target"
     if not UnitExists(t) then return "|cff9d9d9dnone|r" end
@@ -436,7 +480,7 @@ local function OnSetUnit(tt)
     local _, unit = tt:GetUnit()
     if not unit and UnitExists("mouseover") then unit = "mouseover" end
     HideBars()
-    state.unit, state.bars, state.targetLine, state.talentLine = nil, nil, nil, nil
+    state.unit, state.bars, state.targetLine, state.talentLine, state.byLine = nil, nil, nil, nil, nil
     if not unit then return end
     state.unit = unit
     local isPlayer = UnitIsPlayer(unit)
@@ -472,6 +516,11 @@ local function OnSetUnit(tt)
         return #out
     end
     if s.target then state.targetLine = add(C("label") .. "Target:|r " .. TargetText(unit)) end
+    if s.targetedBy and (GetNumRaidMembers() > 0 or GetNumPartyMembers() > 0) then
+        state.byLine = add(Style.TargetedByText(unit))
+    else
+        state.byLine = nil
+    end
     if s.talents and isPlayer and (UnitLevel(unit) or 0) >= 10 then
         state.talentLine = add(C("label") .. "Talents:|r " .. TalentLine(unit))
         -- unit frames redraw their tooltip every 0.2 s: only start the wait once per player
@@ -520,6 +569,11 @@ function Style:UpdateLines(force)
         local t = C("label") .. "Target:|r " .. TargetText(unit)
         if fs and fs:GetText() ~= t then fs:SetText(t); changed = true end
     end
+    if state.byLine then
+        local fs = _G[name .. "TextLeft" .. state.byLine]
+        local t = Style.TargetedByText(unit)
+        if fs and fs:GetText() ~= t then fs:SetText(t); changed = true end
+    end
     if state.talentLine then
         local fs = _G[name .. "TextLeft" .. state.talentLine]
         local t = C("label") .. "Talents:|r " .. TalentLine(unit)
@@ -552,11 +606,19 @@ local function OnSetItem(tt)
         local c = ITEM_QUALITY_COLORS[quality]
         SetBorder(tt, { c.r, c.g, c.b })
     end
-    if s.itemLevel and not tt.tpIlvl and ilvl and ilvl > 1 and IsEquippableItem(link) then
+    -- item level, unless the tooltip already has one (from the server or another addon)
+    local has
+    for i = 2, tt:NumLines() do
+        local fs = _G[tt:GetName() .. "TextLeft" .. i]
+        local t = fs and fs:GetText()
+        if t and t:gsub("|c%x%x%x%x%x%x%x%x", ""):lower():find("^item ?level:? ?%d") then has = true break end
+    end
+    if s.itemLevel and not has and not tt.tpIlvl and ilvl and ilvl > 1 and IsEquippableItem(link) then
         tt.tpIlvl = true
         tt:AddLine(C("label") .. "Item level|r " .. C("value") .. ilvl .. "|r")
         tt:Show()
     end
+    if TP.Stats then TP.Stats:OnItem(tt, link) end
 end
 
 local function OnSetSpell(tt)
@@ -640,7 +702,7 @@ function TP:InitStyle()
             tt.tpOrigBackdrop = tt:GetBackdrop()
             tt:HookScript("OnShow", Paint)
             tt:HookScript("OnTooltipCleared", function(self)
-                self.tpBorder, self.tpIlvl, self.tpSpell = nil, nil, nil
+                self.tpBorder, self.tpIlvl, self.tpSpell, self.tpStats = nil, nil, nil, nil
                 if self == GameTooltip then HideBars(); state.unit = nil end
                 Paint(self)
             end)
@@ -661,210 +723,3 @@ function TP:InitStyle()
     Style:ApplyLook()
 end
 
----------------------------------------------------------------------------
--- Settings page: "Tooltip look"
----------------------------------------------------------------------------
-local controls = {}
-
-local function Label(p, text, x, y, font)
-    local fs = p:CreateFontString(nil, "OVERLAY", font or "GameFontHighlight")
-    fs:SetPoint("TOPLEFT", x, y)
-    fs:SetText(text)
-    return fs
-end
-
-local function Cycle(p, label, x, y, choices, key, onChange)
-    local UI = TP.UI
-    Label(p, label, x + 4, y - 4)
-    local b = UI.FlatButton(p, "", 120, 20)
-    b:SetPoint("TOPLEFT", x + 124, y)
-    b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    local function idx()
-        for i, c in ipairs(choices) do if c[1] == db()[key] then return i end end
-        return 1
-    end
-    b.refresh = function() b:SetText(choices[idx()][2]) end
-    b:SetScript("OnClick", function(_, button)
-        local i = idx() + (button == "RightButton" and -1 or 1)
-        if i > #choices then i = 1 elseif i < 1 then i = #choices end
-        db()[key] = choices[i][1]
-        b.refresh()
-        if onChange then onChange() end
-    end)
-    b:HookScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Click: next.  Right-click: previous.", 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    b:HookScript("OnLeave", function() GameTooltip:Hide() end)
-    controls[#controls + 1] = b
-    return b
-end
-
-local sliderN = 0
-local function Slider(p, label, x, y, min, max, step, key, fmt, onChange)
-    local UI = TP.UI
-    sliderN = sliderN + 1
-    local s = CreateFrame("Slider", "TooltipPlusStyleSlider" .. sliderN, p)
-    s:SetOrientation("HORIZONTAL")
-    s:SetWidth(120); s:SetHeight(12)
-    s:SetPoint("TOPLEFT", x + 124, y - 4)
-    UI.Backdrop(s, UI.C.panel)
-    local th = s:CreateTexture(nil, "OVERLAY")
-    th:SetTexture("Interface\\Buttons\\WHITE8X8")
-    th:SetWidth(8); th:SetHeight(12)
-    s:SetThumbTexture(th)
-    th:SetVertexColor(UI.C.accent[1], UI.C.accent[2], UI.C.accent[3])
-    s:SetMinMaxValues(min, max)
-    s:SetValueStep(step)
-    Label(p, label, x + 4, y - 4)
-    local val = s:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    val:SetPoint("LEFT", s, "RIGHT", 6, 0)
-    s.refresh = function()
-        s.busy = true
-        s:SetValue(db()[key] or min)
-        val:SetText(format(fmt, db()[key] or min))
-        s.busy = nil
-    end
-    s:SetScript("OnValueChanged", function(self, v)
-        if self.busy then return end
-        v = floor(v / step + 0.5) * step
-        db()[key] = v
-        val:SetText(format(fmt, v))
-        if onChange then onChange() end
-    end)
-    s:EnableMouseWheel(true)
-    s:SetScript("OnMouseWheel", function(self, d) self:SetValue(self:GetValue() + d * step) end)
-    controls[#controls + 1] = s
-    return s
-end
-
-local function Swatch(p, label, x, y, key, alpha)
-    local UI = TP.UI
-    Label(p, label, x + 4, y - 4)
-    local b = CreateFrame("Button", nil, p)
-    b:SetWidth(40); b:SetHeight(18)
-    b:SetPoint("TOPLEFT", x + 124, y - 1)
-    UI.Backdrop(b, { 1, 1, 1, 1 })
-    b.refresh = function()
-        local c = db()[key]
-        b:SetBackdropColor(c[1], c[2], c[3], 1)
-    end
-    b:SetScript("OnClick", function()
-        local c = db()[key]
-        local prev = { c[1], c[2], c[3], c[4] }
-        local function apply()
-            local r, g, bb = ColorPickerFrame:GetColorRGB()
-            c[1], c[2], c[3] = r, g, bb
-            if alpha then c[4] = 1 - OpacitySliderFrame:GetValue() end
-            b.refresh()
-            Style:ApplyLook()
-        end
-        ColorPickerFrame.func = apply
-        ColorPickerFrame.opacityFunc = apply
-        ColorPickerFrame.hasOpacity = alpha and true or false
-        ColorPickerFrame.opacity = alpha and (1 - (c[4] or 1)) or 0
-        ColorPickerFrame.previousValues = prev
-        ColorPickerFrame.cancelFunc = function()
-            c[1], c[2], c[3], c[4] = prev[1], prev[2], prev[3], prev[4]
-            b.refresh()
-            Style:ApplyLook()
-        end
-        ColorPickerFrame:SetColorRGB(c[1], c[2], c[3])
-        ColorPickerFrame:Hide()
-        ColorPickerFrame:Show()
-    end)
-    b:SetScript("OnEnter", function(self) self:SetBackdropBorderColor(unpack(UI.C.accent)) end)
-    b:SetScript("OnLeave", function(self) self:SetBackdropBorderColor(unpack(UI.C.border)) end)
-    controls[#controls + 1] = b
-    return b
-end
-
-function TP:BuildStyleSettings(p)
-    local UI = TP.UI
-    local Cc = UI.C
-    local function Heading(text, x, y)
-        local fs = p:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        fs:SetPoint("TOPLEFT", x + 2, y)
-        fs:SetText(text)
-        fs:SetTextColor(Cc.accent[1], Cc.accent[2], Cc.accent[3])
-        local line = p:CreateTexture(nil, "ARTWORK")
-        line:SetHeight(1)
-        line:SetPoint("TOPLEFT", fs, "BOTTOMLEFT", -2, -4)
-        line:SetWidth(240)
-        line:SetTexture(Cc.accent[1], Cc.accent[2], Cc.accent[3], 0.35)
-    end
-    local look = function() Style:ApplyLook() end
-    local X1, X2, X3, Y, STEP = 14, 284, 554, -46, 26
-    local Check = TP.OptCheck
-    local function chk(name, label, key, x, y, tip, after)
-        Check(p, "TooltipPlusStyle" .. name, label, x, y,
-            function() return db()[key] end, function(v) db()[key] = v; if after then after() end end, tip)
-    end
-
-    -- column 1: position and look
-    Heading("Position", X1, Y)
-    local y = Y - 24
-    local MODES = { { "default", "Game default" }, { "mouse", "At the mouse" }, { "fixed", "Fixed spot" } }
-    Cycle(p, "In the world", X1, y, MODES, "anchorWorld"); y = y - STEP
-    Cycle(p, "Frames and bars", X1, y, MODES, "anchorFrame"); y = y - STEP
-    Cycle(p, "At the mouse", X1, y, { { "BOTTOM", "Above" }, { "TOP", "Below" }, { "LEFT", "On the right" },
-        { "RIGHT", "On the left" } }, "mouseSide"); y = y - STEP
-    Slider(p, "Mouse offset X", X1, y, -100, 100, 1, "mouseX", "%d"); y = y - STEP
-    Slider(p, "Mouse offset Y", X1, y, -100, 100, 1, "mouseY", "%d"); y = y - STEP
-    local mv = UI.FlatButton(p, "Move the fixed spot", 244, 20)
-    mv:SetPoint("TOPLEFT", X1 + 4, y)
-    mv:SetScript("OnClick", function() Style:ToggleMover() end)
-    y = y - STEP - 10
-
-    Heading("Look", X1, y)
-    y = y - 24
-    chk("Enabled", "Flat look, colours, scale, font", "enabled", X1, y, nil, look); y = y - STEP
-    Slider(p, "Scale", X1, y, 0.5, 2, 0.05, "scale", "%.2f", look); y = y - STEP
-    local fonts = {}
-    for i, f in ipairs(Style.FONTS) do fonts[i] = f end
-    Cycle(p, "Font", X1, y, fonts, "font", look); y = y - STEP
-    Slider(p, "Font size", X1, y, 8, 20, 1, "fontSize", "%d", look); y = y - STEP
-    Swatch(p, "Background", X1, y, "bg", true); y = y - STEP
-    Swatch(p, "Border", X1, y, "border", false); y = y - STEP
-
-    -- column 2: units
-    Heading("Units", X2, Y)
-    y = Y - 24
-    chk("ClassNames", "Player names in class colour", "classNames", X2, y); y = y - STEP
-    chk("Tags", "<AFK> and <DND>", "tags", X2, y); y = y - STEP
-    chk("Guild", "Guild with rank", "guildRank", X2, y); y = y - STEP
-    chk("Level", "Coloured level, race and class", "levelLine", X2, y, "Level in difficulty colour, class in class colour, Elite / Rare / Boss."); y = y - STEP
-    chk("Faction", "Hide the faction and PvP lines", "hideFaction", X2, y); y = y - STEP
-    chk("Target", "Target of the unit", "target", X2, y); y = y - STEP
-    chk("Talents", "Talents of players", "talents", X2, y,
-        "Main tree and points, e.g. Holy (51/20/0). Read when you hover a player within inspect range (about 28 yards); remembered for 5 minutes."); y = y - STEP
-    chk("NpcID", "NPC ID", "npcID", X2, y); y = y - STEP
-    chk("UnitBorder", "Border in class / reaction colour", "unitBorder", X2, y); y = y - STEP - 10
-    Heading("Bars", X2, y)
-    y = y - 24
-    chk("Health", "Health bar", "healthBar", X2, y, "Replaces the game's bar under the tooltip."); y = y - STEP
-    chk("Power", "Mana / rage / energy bar", "powerBar", X2, y); y = y - STEP
-    chk("BarText", "Numbers on the bars", "barText", X2, y); y = y - STEP
-
-    -- column 3: items and links
-    Heading("Items and links", X3, Y)
-    y = Y - 24
-    chk("Quality", "Border in item quality colour", "qualityBorder", X3, y); y = y - STEP
-    chk("ItemLevel", "Item level (gear)", "itemLevel", X3, y); y = y - STEP
-    chk("LinkIDs", "Spell, quest, achievement IDs", "linkIDs", X3, y); y = y - STEP
-    chk("LinkIcon", "Icon beside links clicked in chat", "linkIcon", X3, y); y = y - STEP
-
-    local note = p:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    note:SetPoint("BOTTOMLEFT", 16, 14)
-    note:SetWidth(UI.W - 32)
-    note:SetJustifyH("LEFT")
-    note:SetText("\"In the world\": units and objects you point at in the 3D world.  \"Frames and bars\": unit frames, " ..
-        "action bars and everything else that uses the game's default tooltip spot.  Bags, the map and other windows " ..
-        "place their tooltips themselves.  A font change shows on the next tooltip.")
-
-    p:SetScript("OnShow", function()
-        TP:RefreshOptions()
-        for _, c in ipairs(controls) do c.refresh() end
-    end)
-end

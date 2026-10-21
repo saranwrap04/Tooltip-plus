@@ -1,4 +1,4 @@
-TOOLTIP PLUS v1.8.0
+TOOLTIP PLUS v1.10.2
 Everything about an item, right in its tooltip. For World of Warcraft 3.3.5a.
 By Saranwrap
 
@@ -14,8 +14,10 @@ how many your characters have, without leaving the game:
   - Sell price, stack size, item ID and item level.
   - Tooltip look: position (game default, at the mouse, or a spot you choose), flat look,
     scale, font, colours, borders in class / reaction / item quality colour.
-  - Units: class colours, guild rank, level, target, talents of players, NPC ID, and
-    health and mana bars in the tooltip.
+  - Units: class colours, guild rank, level, target, who in your group targets it,
+    talents of players, NPC ID, and health and mana bars in the tooltip.
+  - Item stats: ratings as % at your level, what primary stats give your class, and a stat
+    summary with the change against the item you wear.
   - Links: spell, quest and achievement IDs, and the icon beside links clicked in chat.
   - One window (minimap button) with every recipe of every profession, and everything your
     characters own, both searchable.
@@ -102,32 +104,55 @@ YOUR CHARACTERS
 
 
 SETTINGS  (/tplus, minimap right-click, or Escape > Interface > AddOns > Tooltip Plus)
-  - Show item sources, only while holding Shift, compact (hide zones), "... and N more"
-    With "only while holding Shift", the tooltip says "Hold Shift" and fills in as soon as
-    you press it.
-  - Item ID, stack size, sell price
-  - Count of all your characters, one line per character
-  - Used in, recipes known / can learn, reagents, Shift + right-click to open recipes
-  - Minimap button
-  - Which sources to show
-  The Escape > Interface > AddOns page also has every command as a button.
+  A side bar of categories on the left, the options on the right. Hover an option for
+  what it does.
 
-  Settings > Tooltip look  (/tplus look)
-  - Position: "In the world" (units and objects you point at) and "Frames and bars" (unit
-    frames, action bars, anything using the game's default spot), each at the game default,
-    at the mouse, or at a fixed spot. "At the mouse": side and X / Y offset.
-    "Move the fixed spot" shows a box to drag; right-click it when done. The tooltip grows
-    away from the nearest screen corner.
-  - Look: flat look, scale, font, font size, background (with opacity) and border colours.
+  Item info
+  - General: show item sources, only while holding Shift (the tooltip says "Hold Shift"
+    and fills in as soon as you press it), minimap button, the commands.
+  - Item sources: compact (hide zones), "... and N more" lines, which sources to show.
+  - Item details: item ID, stack size, sell price, count of all your characters, one line
+    per character.
+  - Professions: used in, recipes known / can learn, reagents, Shift + right-click to open
+    recipes.
+
+  Tooltip look  (/tplus look)  -  with a live preview of a player, an NPC or an item
+  - Position: units and objects in the world, and frames and bars (unit frames, action
+    bars, anything using the game's default spot), each at the game default, at the mouse
+    or at your anchor point. At the mouse: which side, X / Y offset. "Move anchor point"
+    shows a box to drag (right-click it when done); the tooltip grows away from the
+    nearest screen corner. The preview shows where each kind of tooltip opens.
+  - Appearance: flat look, scale, font, font size, background (with opacity) and border
+    colours.
   - Units: player names in class colour, <AFK> / <DND>, guild with rank, coloured level,
     race and class (Elite / Rare / Boss), hide the faction and PvP lines, target of the
-    unit, talents of players, NPC ID, border in class / reaction colour.
+    unit, targeted by (your group), talents of players, NPC ID, border in class / reaction
+    colour.
+    Targeted by: how many of your party or raid target the unit, and who (up to 6 names).
+    The game only tells it for your group, so it shows while you are in a party or raid.
     Talents: the main tree and the points, e.g. Holy (51/20/0), read when you hover a
     player within inspect range (about 28 yards) and remembered for 5 minutes.
-  - Bars: health bar, mana / rage / energy bar, numbers on the bars. Health of mobs outside
-    your group is only known as a percentage on 3.3.5.
+  - Health bars: health bar, mana / rage / energy bar, numbers on the bars. Health of mobs
+    outside your group is only known as a percentage on 3.3.5.
   - Items and links: border in item quality colour, item level of gear, spell / quest /
     achievement IDs, icon beside links clicked in chat.
+  - Item stats:
+    Ratings as %: each rating with what it gives at your level, e.g.
+      +32 Critical Strike Rating (0.70% crit)
+    What primary stats give: Strength -> attack power (and block value for warriors,
+    paladins and shamans), Agility -> crit, armor (and attack power for rogues, hunters
+    and shamans), Stamina -> health, Intellect -> mana and spell crit. Crit from agility
+    and intellect is shown at level 80.
+    Stat summary: under gear, one line per stat as your class uses it (health, mana, mana
+    regen, attack or spell power, armor, crit, hit, haste, expertise, armor penetration,
+    defense, dodge, parry, block, resilience), e.g.
+      Spell Haste(%)        1.19 (-0.43)
+    Change against what you wear: in brackets, what you gain (green) or lose (red) against
+    the item in that slot; rings, trinkets and one-hand weapons: against both of yours
+    (first / second). It uses the base stats of the items, without gems and enchants.
+    Item level is not added when the tooltip already shows one.
+
+  The Escape > Interface > AddOns page also has every command as a button.
 
 
 COMMANDS

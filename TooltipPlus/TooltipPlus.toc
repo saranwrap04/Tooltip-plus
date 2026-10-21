@@ -1,8 +1,8 @@
 ## Interface: 30300
 ## Title: Tooltip Plus
-## Notes: Where items come from (vendors, quests, drops with drop chance, crafting...), profession info, and what all your characters have, in the tooltip. Recipe and item windows.
+## Notes: Where items come from (vendors, quests, drops with drop chance, crafting...), profession info, what all your characters have, item stats compared to your gear, and a tooltip look of your own (position, colours, unit info, health bars). Recipe and item windows.
 ## Author: Saranwrap
-## Version: 1.8.0
+## Version: 1.10.2
 ## SavedVariables: TooltipPlusDB, TooltipPlusChars, TooltipPlusGuilds
 
 Data\Base.lua
@@ -16,9 +16,11 @@ TooltipPlus.lua
 Owned.lua
 Professions.lua
 Window.lua
+Widgets.lua
 Recipes.lua
 Items.lua
 Minimap.lua
 Options.lua
 Style.lua
+Stats.lua
 InterfacePanel.lua

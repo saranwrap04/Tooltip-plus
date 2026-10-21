@@ -1,12 +1,12 @@
 <p align="center">
-<img width="390" height="332" alt="Tooltip Plus" src="images/logo.png" />
+<img width="320" height="320" alt="Tooltip Plus" src="images/logo.png" />
 </p>
 
 # Tooltip Plus
 
 **Everything about an item, right in its tooltip.** For World of Warcraft 3.3.5a (Wrath of the Lich King).
 
-Version 1.8.0 · by Saranwrap
+Version 1.10.2 · by Saranwrap
 
 Hover any item and Tooltip Plus tells you where it comes from, what it is used for and how many your characters have, without leaving the game.
 
@@ -15,7 +15,8 @@ Hover any item and Tooltip Plus tells you where it comes from, what it is used f
 - **Your characters**: how many of the item each of your characters has, and where (bags, bank, equipped, mailbox, currencies), plus your guild banks.
 - **Sell price, stack size, item ID and item level.**
 - **Tooltip look**: position (game default, at the mouse, or a spot you choose), flat look, scale, font, colours, borders in class / reaction / item quality colour.
-- **Units**: class colours, guild rank, level, target, talents of players, NPC ID, and health and mana bars in the tooltip.
+- **Units**: class colours, guild rank, level, target, who in your group targets it, talents of players, NPC ID, and health and mana bars in the tooltip.
+- **Item stats**: ratings as % at your level, what primary stats give your class, and a stat summary with the change against the item you wear.
 - **Links**: spell, quest and achievement IDs, and the icon beside links clicked in chat.
 - **One window** (minimap button) with every recipe of every profession, and everything your characters own, both searchable.
 
@@ -104,30 +105,35 @@ Log on each character once so it is remembered. Some things are read when you op
 
 ## Settings
 
-Open them with `/tplus`, a right-click on the minimap button, or **Escape → Interface → AddOns → Tooltip Plus**.
+Open them with `/tplus`, a right-click on the minimap button, or **Escape → Interface → AddOns → Tooltip Plus**. Categories are in a side bar on the left; hover an option to see what it does.
 
-- Show item sources, only while holding Shift, compact (hide zones), "… and N more" lines. With **only while holding Shift**, the tooltip shows a "Hold Shift" line and fills in as soon as you press Shift.
-- Item ID, stack size, sell price
-- Count of all your characters, one line per character
-- Used in, recipes known / can learn, reagents of crafted items, Shift + right-click to open recipes
-- Minimap button
-- Which sources to show
+**Item info**
 
-The **Escape → Interface → AddOns** page also has every command as a button: open the window, look up an item, and forget a character.
-
-### Tooltip look
-
-The second tab of the settings (`/tplus look`).
-
-| Group | Options |
+| Category | Options |
 | --- | --- |
-| **Position** | **In the world** (units and objects you point at) and **Frames and bars** (unit frames, action bars, anything that uses the game's default spot): game default, at the mouse, or a fixed spot. At the mouse: which side, X / Y offset. **Move the fixed spot** shows a box to drag (right-click it when done); the tooltip grows away from the nearest screen corner. |
-| **Look** | Flat look, scale, font, font size, background colour (with opacity), border colour |
-| **Units** | Player names in class colour, &lt;AFK&gt; / &lt;DND&gt;, guild with rank, coloured level, race and class (Elite / Rare / Boss), hide the faction and PvP lines, target of the unit, talents of players, NPC ID, border in class / reaction colour |
-| **Bars** | Health bar, mana / rage / energy bar, numbers on the bars |
+| **General** | Show item sources, only while holding Shift (the tooltip shows a "Hold Shift" line and fills in as soon as you press Shift), minimap button, the commands |
+| **Item sources** | Compact (hide zones), "… and N more" lines, which sources to show |
+| **Item details** | Item ID, stack size, sell price, count of all your characters, one line per character |
+| **Professions** | Used in, recipes known / can learn, reagents of crafted items, Shift + right-click to open recipes |
+
+**Tooltip look** (`/tplus look`), with a live preview of a player, an NPC or an item
+
+| Category | Options |
+| --- | --- |
+| **Position** | **Units and objects in the world** and **Frames and bars** (unit frames, action bars, anything that uses the game's default spot): game default, at the mouse, or your anchor point. At the mouse: which side, X / Y offset. **Move anchor point** shows a box to drag (right-click it when done); the tooltip grows away from the nearest screen corner. The preview shows where each kind of tooltip opens. |
+| **Appearance** | Flat look, scale, font, font size, background colour (with opacity), border colour |
+| **Units** | Player names in class colour, &lt;AFK&gt; / &lt;DND&gt;, guild with rank, coloured level, race and class (Elite / Rare / Boss), hide the faction and PvP lines, target of the unit, targeted by (your group), talents of players, NPC ID, border in class / reaction colour |
+| **Health bars** | Health bar, mana / rage / energy bar, numbers on the bars |
 | **Items and links** | Border in item quality colour, item level of gear, spell / quest / achievement IDs, icon beside links clicked in chat |
+| **Item stats** | **Ratings as %** (e.g. +32 Critical Strike Rating *(0.70% crit)*), **what primary stats give** (Strength → attack power and block value, Agility → crit, armor and attack power, Stamina → health, Intellect → mana and spell crit), **stat summary** under gear (one line per stat as your class uses it: health, mana, mana regen, attack or spell power, armor, crit, hit, haste…), **change against what you wear** in brackets (gains in green, losses in red; rings, trinkets and one-hand weapons against both of yours) |
+
+**Targeted by** shows how many of your party or raid target the unit, and who (up to 6 names). The game only tells it for your group, so it shows while you are in a party or raid.
+
+**Item stats** use the rating formula of 3.3.5 for your level and class (paladins, death knights, shamans and druids get 30% more melee haste). Crit from agility and intellect is shown at level 80. The summary uses the base stats of the items, without gems and enchants. Item level is not added when the tooltip already shows one.
 
 Talents show the main tree and the points, e.g. **Holy (51/20/0)**. They are read when you hover a player within inspect range (about 28 yards) and remembered for 5 minutes. The health of mobs outside your group is only known as a percentage on 3.3.5.
+
+The **Escape → Interface → AddOns** page also has every command as a button: open the window, look up an item, and forget a character.
 
 ---
 
@@ -162,14 +168,9 @@ Sources, prices and drop chances come from the AzerothCore world database (the c
 <img width="426" alt="Item tooltip" src="images/screenshots/tooltip.png" />
 </p>
 
-<p align="center"><b>Recipes</b></p>
+<p align="center"><b>Recipes: reagents, all the materials broken down, where to learn it, who can learn it</b></p>
 <p align="center">
 <img width="760" alt="Recipes" src="images/screenshots/recipes.png" />
-</p>
-
-<p align="center"><b>Recipe details: reagents, where to learn it, who can learn it</b></p>
-<p align="center">
-<img width="760" alt="Recipe details: reagents, where to learn it, who can learn it" src="images/screenshots/recipe-details.png" />
 </p>
 
 <p align="center"><b>Items on all your characters</b></p>
@@ -177,7 +178,17 @@ Sources, prices and drop chances come from the AzerothCore world database (the c
 <img width="760" alt="Items on all your characters" src="images/screenshots/items.png" />
 </p>
 
-<p align="center"><b>Settings</b></p>
+<p align="center"><b>Settings: tooltip appearance, with a live preview</b></p>
 <p align="center">
-<img width="760" alt="Settings" src="images/screenshots/settings.png" />
+<img width="760" alt="Settings: appearance" src="images/screenshots/settings-appearance.png" />
+</p>
+
+<p align="center"><b>Settings: item stats and the stat summary</b></p>
+<p align="center">
+<img width="760" alt="Settings: item stats" src="images/screenshots/settings-item-stats.png" />
+</p>
+
+<p align="center"><b>Settings: tooltip position</b></p>
+<p align="center">
+<img width="760" alt="Settings: position" src="images/screenshots/settings-position.png" />
 </p>

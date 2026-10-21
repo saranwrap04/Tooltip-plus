@@ -16,7 +16,7 @@ local ADDON_NAME = ...
 TooltipPlus = TooltipPlus or {}
 local TP = TooltipPlus
 TP.NAME = "Tooltip Plus"
-TP.VERSION = "1.8.0"
+TP.VERSION = "1.10.2"
 TP.AUTHOR = "Saranwrap"
 TP.FOLDER = ADDON_NAME or "TooltipPlus"
 TP.MEDIA = "Interface\\AddOns\\" .. TP.FOLDER .. "\\Media\\"
@@ -322,7 +322,7 @@ local function AddToTooltip(tt)
     if not hasLines and not hint and not count and not TP.db.itemID and not stack and not sell then return end
     -- own block: empty line, then "Tooltip Plus:" heading, then the sources
     tt:AddLine(" ")
-    tt:AddLine((TP.UI and TP.UI.ACCENT or "|cfffc7a2b") .. "Tooltip Plus:|r")
+    tt:AddLine((TP.UI and TP.UI.ACCENT or "|cffffd100") .. "Tooltip Plus:|r")
     if hasLines then
         for _, l in ipairs(lines) do
             if l[2] then tt:AddDoubleLine(l[1], l[2]) else tt:AddLine(l[1]) end
@@ -394,7 +394,7 @@ local function CopyDefaults(src, dst)
 end
 
 function TP:Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage((TP.UI and TP.UI.ACCENT or "|cfffc7a2b") .. "Tooltip Plus|r: " .. tostring(msg))
+    DEFAULT_CHAT_FRAME:AddMessage((TP.UI and TP.UI.ACCENT or "|cffffd100") .. "Tooltip Plus|r: " .. tostring(msg))
 end
 
 local ev = CreateFrame("Frame")
@@ -434,7 +434,7 @@ SlashCmdList["TOOLTIPPLUS"] = function(msg)
     elseif msg == "settings" or msg == "options" then
         TP:ShowOptions()
     elseif msg == "look" then
-        TP.Main:Show("style")
+        TP.Main:Show("settings", "position")
     elseif msg == "minimap" then
         TP.db.minimap = not TP.db.minimap
         TP:UpdateMinimap()

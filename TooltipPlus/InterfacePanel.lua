@@ -7,7 +7,7 @@
 
 local TP = TooltipPlus
 local GREY = "|cff9d9d9d"
-local ACCENT = "|cfffc7a2b"
+local ACCENT = "|cffffd100"
 
 local function Button(parent, text, w, onClick)
     local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
@@ -41,7 +41,7 @@ function TP:InitInterfacePanel()
     local title = Label(p, TP.NAME, "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
     local sub = Label(p, GREY .. "v" .. TP.VERSION .. "  -  by " .. TP.AUTHOR ..
-        "    Shows where an item comes from, and which of your characters own it.|r")
+        "    Where items come from, item stats, what your characters own, and your tooltip look.|r")
     sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
 
     -- settings window + on / off
